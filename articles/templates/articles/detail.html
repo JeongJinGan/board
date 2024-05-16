@@ -137,7 +137,21 @@
         <div class="d-flex flex-column">
           <div class="detail-user-comment">
             <!-- 날짜 -->
-            <p>{{ com.created_at }}</p>
+            <!-- <p>{{ com.created_at }}</p> -->
+            {% if com.is_updated == False %}
+              {% if com.created_string == False %}
+                {{ com.created_at|date:'Y.m.d' }}
+              {% else %}
+                {{ com.created_string }}
+              {% endif %}
+            {% else %}
+              {% if com.created_string == False %}
+                {{ com.updated_at|date:'Y.m.d' }}
+              {% else %}
+                {{ com.created_string }}
+              {% endif %}
+            (수정됨)
+            {% endif %}
             <!-- 컨텐츠 -->
             <div>{{ com.content }}</div>
           </div>

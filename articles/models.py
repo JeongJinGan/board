@@ -5,6 +5,9 @@ from imagekit.processors import ResizeToFill
 from multiselectfield import MultiSelectField
 from django.db import models
 from django.conf import settings
+from datetime import datetime, timedelta
+from django.utils import timezone
+
 
 good = (
     (1,'커피맛'),
@@ -56,6 +59,7 @@ class Cafe(models.Model):
 class Comment(models.Model):
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     picture = ProcessedImageField(upload_to='images/', blank=True,
                                 processors=[ResizeToFill(1200, 960)],
@@ -73,4 +77,25 @@ class Comment(models.Model):
     tag = MultiSelectField(choices=good, max_choices=6, blank=True)
     like = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name='likeuser')
 
+    @property
+    def created_string(self):
+        time = datetime.now(tz=timezone.utc) - self.created_at
 
+        if time < timedelta(minutes=1):
+            return "방금 전"
+        elif time < timedelta(hours=1):
+            return str(int(time.seconds / 60)) + "분 전"
+        elif time < timedelta(days=1):
+            return str(int(time.seconds / 3600)) + '시간 전'
+        elif time < timedelta(days=7):
+            time = datetime.now(tz=timezone.utc).date() - self.created_at.date()
+            return str(time.days) + "일 전"
+        else:
+            return False
+    @property
+    def is_updated(self):
+        time = self.updated_at - self.created_at
+        if time < timedelta(seconds=10):
+            return False
+        else:
+            return True
