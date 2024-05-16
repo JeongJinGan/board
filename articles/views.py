@@ -4,6 +4,8 @@ from django.contrib.auth import get_user_model
 from .models import Comment, Cafe
 from .forms import CafeForm, CommentForm
 from django.db.models import Q
+from datetime import datetime, timedelta
+from django.utils import timezone
 # Create your views here.
 
 
@@ -111,23 +113,61 @@ def index(request):
     return render(request, "articles/index.html", context)
 
 # 카페 상세정보
+# def detail(request, pk):
+#     cafe = Cafe.objects.get(pk=pk)
+    
+#     goods = (
+#         (cafe.taste,'#커피가맛있는'),
+#         (cafe.interior,'#인테리어가예쁜'),
+#         (cafe.dessert,'#디저트가맛있는'),
+#         (cafe.emotion,'#감성충만한'),
+#         (cafe.hip,'#힙한'),
+#         (cafe.study,'#집중하기좋은'),
+#         (cafe.love,'#데이트하기좋은'),
+#         (cafe.sight,'#뷰가좋은'),
+#     )
+#     comment_form = CommentForm()
+#     cafe.score = cafe.taste + cafe.interior + cafe.dessert + cafe.emotion + cafe.hip + cafe.study + cafe.love + cafe.sight
+#     cafe.save()
+#     tag = []
+#     for good,name in goods:
+#         li = []
+#         li.append(good)
+#         li.append(name)
+#         tag.append(li)
+#     tag = sorted(tag, reverse=True)
+#     hashtag = []
+#     for i in range(3):
+#         hashtag.append(tag[i][1])
+
+#     cafe.hits = cafe.hits + 1
+#     cafe.save()
+#     context = {
+#         'cafe': cafe,
+#         'comment' : cafe.comment_set.all(),
+#         'hashtag' : hashtag,
+#         }
+#     return render(request, "articles/detail.html", context)
+
 def detail(request, pk):
     cafe = Cafe.objects.get(pk=pk)
+
     goods = (
-        (cafe.taste,'#커피가맛있는'),
-        (cafe.interior,'#인테리어가예쁜'),
-        (cafe.dessert,'#디저트가맛있는'),
-        (cafe.emotion,'#감성충만한'),
-        (cafe.hip,'#힙한'),
-        (cafe.study,'#집중하기좋은'),
-        (cafe.love,'#데이트하기좋은'),
-        (cafe.sight,'#뷰가좋은'),
+        (cafe.taste, '#커피가맛있는'),
+        (cafe.interior, '#인테리어가예쁜'),
+        (cafe.dessert, '#디저트가맛있는'),
+        (cafe.emotion, '#감성충만한'),
+        (cafe.hip, '#힙한'),
+        (cafe.study, '#집중하기좋은'),
+        (cafe.love, '#데이트하기좋은'),
+        (cafe.sight, '#뷰가좋은'),
     )
     comment_form = CommentForm()
     cafe.score = cafe.taste + cafe.interior + cafe.dessert + cafe.emotion + cafe.hip + cafe.study + cafe.love + cafe.sight
     cafe.save()
+
     tag = []
-    for good,name in goods:
+    for good, name in goods:
         li = []
         li.append(good)
         li.append(name)
@@ -137,14 +177,28 @@ def detail(request, pk):
     for i in range(3):
         hashtag.append(tag[i][1])
 
-    cafe.hits = cafe.hits + 1
-    cafe.save()
+    # session_key 변수를 사용하여 특정 글에 대한 조회 여부 식별
+    session_key = f'viewed_cafe_{pk}'
+    last_viewed = request.session.get(session_key)
+
+    if last_viewed:
+        last_viewed_date = datetime.strptime(last_viewed, '%Y-%m-%d').date()
+        last_viewed_date = timezone.make_aware(datetime.combine(last_viewed_date, datetime.min.time()), timezone.get_current_timezone())
+    else:
+        last_viewed_date = None
+
+    if not last_viewed_date or (timezone.now() - last_viewed_date).days >= 1:
+        cafe.hits += 1
+        cafe.save()
+        request.session[session_key] = timezone.now().strftime('%Y-%m-%d')
+
     context = {
         'cafe': cafe,
-        'comment' : cafe.comment_set.all(),
-        'hashtag' : hashtag,
-        }
+        'comment': cafe.comment_set.all(),
+        'hashtag': hashtag,
+    }
     return render(request, "articles/detail.html", context)
+
 
 def create_cafe(request):
     if request.method == "POST":
